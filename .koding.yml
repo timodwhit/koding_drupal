@@ -1,0 +1,54 @@
+koding:
+  userInput:
+    PrivateKey: textarea
+    PublicKey: textarea
+provider:
+  aws:
+    access_key: '${var.aws_access_key}'
+    secret_key: '${var.aws_secret_key}'
+resource:
+  aws_instance:
+    docker:
+      instance_type: t2.micro
+      ami: ''
+      tags:
+        Name: '${var.koding_user_username}-${var.koding_group_slug}'
+      user_data: |-
+        export GITHUB_USERNAME=${var.userInput_github_username}
+        export USER_NAME=${var.koding_user_username}
+        export USER_HOME=/home/$USER_NAME
+
+        mkdir -p $USER_HOME/.ssh
+
+        echo "${var.userInput_PrivateKey}" >> $USER_HOME/.ssh/id_rsa      # insert private key so that this vm can access the forked repo
+        echo "${var.userInput_PublicKey}" >> $USER_HOME/.ssh/id_rsa.pub   # insert public key
+
+        chown $USER_NAME:$USER_NAME $USER_HOME/.ssh
+        chown $USER_NAME:$USER_NAME $USER_HOME/.ssh/id_rsa
+        chmod 600 $USER_HOME/.ssh/id_rsa  # make sure file permissions are set correctly
+
+        apt-get update
+        apt-get install -y git-core       # install git
+
+        # since user will not be interacting with this bash execution,
+        # we don't want bash to stop and ask "do you want to continue yes/no"
+        echo "Host github.comn User gitn IdentityFile $USER_HOME/.ssh/id_rsan StrictHostKeyChecking no" >> $USER_HOME/.ssh/config
+
+        # clone the repository with the correct user (stack script is run as root)
+        su $USER_NAME -c "git clone git@github.com:timodwhit/koding_test $USER_HOME/koding_test"
+
+        # add the master repository as upstream
+        su $USER_NAME -c "git remote add -f upstream git@github.com:timodwhit/koding_test"
+
+        # Install Docker.
+        curl -fsSL https://get.docker.com/ | sh
+        usermod -aG docker $USER_NAME
+
+        # Install Docker Compose.
+        apt-get install -y python-pip
+        pip install docker-compose
+
+        # Run docker-compose.
+        cd  /home/$USER_NAME/koding_test
+        docker-compose up -d
+
