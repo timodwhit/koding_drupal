@@ -18,6 +18,7 @@ resource:
         export USER_NAME=${var.koding_user_username}
         export USER_HOME=/home/$USER_NAME
         export DOCROOT=$USER_HOME/koding_drupal/docroot
+        export KODINGDRUPAL_MYSQL_PASS=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 
         mkdir -p $USER_HOME/.ssh
 
@@ -67,7 +68,10 @@ resource:
 
         # Add xdebug alias.
         # ifconfig lo0 alias 10.254.254.254
+        # Friendly Message
 
-        # Run the command to install the drupal site.
-        cd /home/$USER_NAME/koding_drupal
-        docker-compose exec php drush @dev si lightning --account-pass=admin
+        echo ""
+        echo "Your Machine is ready."
+        echo ""
+        echo "You are almost ready to dev. Please run:"
+        echo "sudo sh ~/koding_drupal/scripts/start_dev.sh"
