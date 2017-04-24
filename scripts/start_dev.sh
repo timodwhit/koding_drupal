@@ -1,6 +1,6 @@
 #! /bin/bash
 cd $HOME/koding_drupal &&
-docker-compose exec php exec drush @dev si lightning -y;
+docker-compose exec php drush @dev si lightning -y;
 # Import database
 # docker-compose exec php exec drush @dev sql-drop drupal;
 # docker-compose exec php exec drush @dev sql-create drupal;
