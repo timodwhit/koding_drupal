@@ -17,6 +17,7 @@ resource:
         export GITHUB_USERNAME=${var.userInput_github_username}
         export USER_NAME=${var.koding_user_username}
         export USER_HOME=/home/$USER_NAME
+        export DOCROOT=$USER_HOME/koding_drupal/docroot
 
         mkdir -p $USER_HOME/.ssh
 
@@ -25,20 +26,22 @@ resource:
 
         chown $USER_NAME:$USER_NAME $USER_HOME/.ssh
         chown $USER_NAME:$USER_NAME $USER_HOME/.ssh/id_rsa
-        chmod 600 $USER_HOME/.ssh/id_rsa  # make sure file permissions are set correctly
+        chown $USER_NAME:$USER_NAME $USER_HOME/.ssh/id_rsa.pub
+        chmod 600 $USER_HOME/.ssh/id_rsa
+        chmod 600 $USER_HOME/.ssh/id_rsa.pub  # make sure file permissions are set correctly
 
         apt-get update
         apt-get install -y git-core       # install git
 
         # since user will not be interacting with this bash execution,
         # we don't want bash to stop and ask "do you want to continue yes/no"
-        echo "Host github.comn User gitn IdentityFile $USER_HOME/.ssh/id_rsan StrictHostKeyChecking no" >> $USER_HOME/.ssh/config
+        echo "Host github.com\n User git\n IdentityFile $USER_HOME/.ssh/id_rsa\n StrictHostKeyChecking no" >> $USER_HOME/.ssh/config
 
         # clone the repository with the correct user (stack script is run as root)
-        su $USER_NAME -c "git clone git@github.com:timodwhit/koding_test $USER_HOME/koding_test"
+        su $USER_NAME -c "git clone git@github.com:timodwhit/koding_drupal $USER_HOME/koding_drupal"
 
         # add the master repository as upstream
-        su $USER_NAME -c "git remote add -f upstream git@github.com:timodwhit/koding_test"
+        su $USER_NAME -c "git remote add -f upstream git@github.com:timodwhit/koding_drupal"
 
         # Install Docker.
         curl -fsSL https://get.docker.com/ | sh
@@ -48,7 +51,23 @@ resource:
         apt-get install -y python-pip
         pip install docker-compose
 
+        # Create sites/default/files
+        mkdir -p $DOCROOT/sites/default/files/private
+        chmod -R 755 $DOCROOT/sites/default/files
+        # www-data:www-data = 82
+        chown -R 82:82 $DOCROOT/sites/default/files
+
+        # Create settings.php
+        cp $DOCROOT/sites/default/default.settings.php $DOCROOT/sites/default/settings.php
+        echo  "\$databases['default']['default'] = array (\n 'database' => 'drupal',\n 'username' => 'drupal',\n 'password' => 'drupal',\n 'host' => 'mariadb',\n 'port' => '3306',\n 'driver' => 'mysql',\n );" >> $DOCROOT/sites/default/settings.php
+
         # Run docker-compose.
-        cd  /home/$USER_NAME/koding_test
+        cd /home/$USER_NAME/koding_drupal
         docker-compose up -d
 
+        # Add xdebug alias.
+        # ifconfig lo0 alias 10.254.254.254
+
+        # Run the command to install the drupal site.
+        cd /home/$USER_NAME/koding_drupal
+        docker-compose exec php drush @dev si lightning --account-pass=admin
