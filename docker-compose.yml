@@ -7,7 +7,7 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: 1
       MYSQL_DATABASE: drupal
       MYSQL_USER: drupal
-      MYSQL_PASSWORD: ${KODINGDRUPAL_MYSQL_PASS}
+      MYSQL_PASSWORD: drupal
 
   php:
     image: wodby/drupal-php:5.6-1.0.0
@@ -40,7 +40,7 @@ services:
     environment:
       PMA_HOST: mariadb
       PMA_USER: drupal
-      PMA_PASSWORD: ${KODINGDRUPAL_MYSQL_PASS}
+      PMA_PASSWORD: drupal
       PHP_UPLOAD_MAX_FILESIZE: 1G
       PHP_MAX_INPUT_VARS: 1G
     ports:
